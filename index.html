@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>康樂富寄倉互助配對</title>
+<style>
+:root{--coral:#d96c5f;--cream:#fffaf3;--ink:#43352f;--muted:#806f67;--line:#eadbd0}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:var(--cream);color:var(--ink)}
+header{padding:52px 20px 38px;text-align:center;background:linear-gradient(135deg,#f5d4c7,#fff4e6)}
+header span{display:inline-block;background:#fff8;padding:7px 13px;border-radius:99px;color:#a54b42;font-weight:700}
+h1{font-size:clamp(30px,6vw,54px);margin:16px 0 10px}header p{max-width:720px;margin:auto;line-height:1.8;color:var(--muted)}
+.wrap{max-width:1100px;margin:auto;padding:24px 18px 60px}.notice{background:white;border:1px solid var(--line);border-radius:18px;padding:20px;line-height:1.8;margin-bottom:22px}
+.controls{display:grid;grid-template-columns:1fr auto;gap:12px;margin:22px 0}.controls input,.controls select,input,select,textarea{border:1px solid var(--line);border-radius:12px;padding:13px;background:white;font-size:16px}
+.tabs{display:flex;gap:10px;margin-bottom:18px}.tabs button,.primary{border:0;border-radius:999px;padding:12px 18px;font-weight:700;cursor:pointer}.tabs button.active,.primary{background:var(--coral);color:white}.tabs button{background:#f1e4dc;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:15px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 5px 18px #6543210b}.pic{height:120px;border-radius:14px;background:linear-gradient(145deg,#fff1e8,#f5ddd4);display:grid;place-items:center;font-size:44px}.card h3{font-size:17px;margin:14px 0 8px;line-height:1.45}.tag{font-size:13px;color:#a34f46;background:#fff0ed;border-radius:99px;padding:5px 9px;display:inline-block}
+.form{margin-top:34px;background:white;border:1px solid var(--line);border-radius:22px;padding:24px}.form h2{margin-top:0}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}textarea{min-height:90px;resize:vertical}.primary{margin-top:14px;width:100%}.hint{font-size:14px;color:var(--muted);line-height:1.7}footer{text-align:center;color:var(--muted);padding:25px}
+@media(max-width:650px){.controls,.fields{grid-template-columns:1fr}.wide{grid-column:auto}header{padding-top:38px}}
+</style></head>
+<body>
+<header><span>私群限定・互助使用</span><h1>康樂富寄倉互助配對</h1><p>有寄倉想轉讓、或沒有寄倉想單買，都可以在這裡快速整理需求，再貼到 LINE 私群互相配合。</p></header>
+<main class="wrap">
+<div class="notice">🌿 <b>寄倉沒有期限</b>，可以先放著慢慢使用，其實都還是用得完的 😊<br>不吃保健品，也能幫家人兌換寢具組、護腰帶等生活用品，比較不會浪費。配對價格、付款與交付方式請雙方自行確認。</div>
+<div class="controls"><input id="q" placeholder="搜尋產品，例如：魚油、益生菌、護腰帶"><select id="cat"><option value="">全部分類</option><option>營養保健</option><option>飲品</option><option>生活用品</option><option>美容保養</option></select></div>
+<div class="tabs"><button class="active" data-mode="all">全部</button><button data-mode="sell">我有寄倉</button><button data-mode="buy">我想要</button></div>
+<section id="grid" class="grid"></section>
+<section class="form"><h2>快速產生配對訊息</h2><p class="hint">填好後按一下即可複製，再貼到康樂富 LINE 私群。資料不會公開儲存在網頁上。</p>
+<div class="fields">
+<select id="type"><option>我有寄倉想轉讓</option><option>我想購買</option></select>
+<input id="name" placeholder="稱呼">
+<input id="product" class="wide" placeholder="產品名稱">
+<input id="qty" placeholder="數量／組數"><input id="price" placeholder="希望價格（可留空）">
+<textarea id="note" class="wide" placeholder="補充說明，例如效期、交付方式"></textarea>
+</div><button class="primary" id="copy">複製訊息貼到 LINE</button></section>
+</main><footer>此頁為會員互助資訊整理工具，實際交易內容由雙方自行確認。</footer>
+<script>
+const products=[
+["科技燕窩美妍賦活飲","飲品","🌸"],["科技燕窩全能飲","飲品","🥤"],["青春源沐淨 D","美容保養","🤍"],["青春源煥活 R","美容保養","🤎"],["青春源倍護 P","美容保養","🩷"],["頂級高濃度魚油","營養保健","🐟"],["多采益生菌 EX","營養保健","🩵"],["活力 BB EX","營養保健","🍊"],["鈣鎂鋅 EX","營養保健","💊"],["紅麴活力循 EX","營養保健","❤️"],["納豆紅麴 Q10","營養保健","🫀"],["清醇活循飲","飲品","🧡"],["膠原關鍵穩 EX","營養保健","🦵"],["龜鹿關鍵飲","飲品","🦌"],["樂高成長飲","飲品","🌱"],["艾康敏益生菌","營養保健","🩵"],["小心甘 EX","營養保健","❤️"],["馬卡活力久 EX","營養保健","⚡"],["極光白賦美 EX","美容保養","✨"],["蔓越莓私密對策","營養保健","🩷"],["雙重支撐護腰帶","生活用品","🩹"],["健康循環能量墊","生活用品","🛏️"],["超能雙感鑽石被","生活用品","🛌"],["石墨烯量子共振貼布","生活用品","🔥"],["逆時光超導美容儀","美容保養","💆"]
+];
+const grid=document.querySelector("#grid"),q=document.querySelector("#q"),cat=document.querySelector("#cat");
+function draw(){let s=q.value.toLowerCase(),c=cat.value;grid.innerHTML=products.filter(p=>(!s||p[0].toLowerCase().includes(s))&&(!c||p[1]===c)).map(p=>`<article class="card"><div class="pic">${p[2]}</div><h3>${p[0]}</h3><span class="tag">${p[1]}</span></article>`).join("")||"<p>找不到符合的產品。</p>"}
+q.oninput=cat.onchange=draw;draw();
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelector("#type").selectedIndex=b.dataset.mode==="buy"?1:0;document.querySelector(".form").scrollIntoView({behavior:"smooth"})});
+document.querySelector("#copy").onclick=async()=>{let v=id=>document.querySelector(id).value.trim();let msg=`【康樂富寄倉互助配對】\n${v("#type")}\n稱呼：${v("#name")||"未填"}\n產品：${v("#product")||"未填"}\n數量：${v("#qty")||"未填"}\n希望價格：${v("#price")||"雙方討論"}\n補充：${v("#note")||"無"}\n\n有需要的夥伴歡迎私訊，謝謝 😊`;try{await navigator.clipboard.writeText(msg);alert("已複製，可以貼到 LINE 私群囉！")}catch(e){prompt("請複製以下內容：",msg)}};
+</script></body></html>
