@@ -42,3 +42,4 @@ q.oninput=cat.onchange=draw;draw();
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelector("#type").selectedIndex=b.dataset.mode==="buy"?1:0;document.querySelector(".form").scrollIntoView({behavior:"smooth"})});
 document.querySelector("#copy").onclick=async()=>{let v=id=>document.querySelector(id).value.trim();let msg=`【康樂富寄倉互助配對】\n${v("#type")}\n稱呼：${v("#name")||"未填"}\n產品：${v("#product")||"未填"}\n數量：${v("#qty")||"未填"}\n希望價格：${v("#price")||"雙方討論"}\n補充：${v("#note")||"無"}\n\n有需要的夥伴歡迎私訊，謝謝 😊`;try{await navigator.clipboard.writeText(msg);alert("已複製，可以貼到 LINE 私群囉！")}catch(e){prompt("請複製以下內容：",msg)}};
 </script></body></html>
+<!-- trigger GitHub Pages deployment -->
