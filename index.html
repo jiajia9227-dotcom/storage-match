@@ -19,16 +19,16 @@ h1{font-size:clamp(30px,6vw,54px);margin:16px 0 10px}header p{max-width:720px;ma
 <body>
 <header><span>私群限定・互助使用</span><h1>康樂富寄倉互助配對</h1><p>有寄倉想轉讓、或沒有寄倉想單買，都可以在這裡快速整理需求，再貼到 LINE 私群互相配合。</p></header>
 <main class="wrap">
-<div class="notice">🌿 <b>寄倉沒有期限</b>，可以先放著慢慢使用，其實都還是用得完的 😊<br>不吃保健品，也能幫家人兌換寢具組、護腰帶等生活用品，比較不會浪費。配對價格、付款與交付方式請雙方自行確認。</div>
+<div class="notice">🌿 <b>寄倉沒有期限</b>，可以先放著慢慢使用，其實都還是用得完的 😊<br>不吃保健品，也能幫家人兌換寢具組、護腰帶等生活用品，比較不會浪費。<br><br>📌 <b>配對以「寄倉組數」為單位</b>：每一組實際可兌換幾盒，或需輸入幾組才是一套，請以官方兌換表單上的標示為準。例如表單可能標示「輸入 1 為 5 盒」或「輸入 6 為 1 套」。建議先確認想兌換的品項需要幾組，再進行配對。配對價格、付款與交付方式請雙方自行確認。</div>
 <div class="controls"><input id="q" placeholder="搜尋產品，例如：魚油、益生菌、護腰帶"><select id="cat"><option value="">全部分類</option><option>營養保健</option><option>飲品</option><option>生活用品</option><option>美容保養</option></select></div>
 <div class="tabs"><button class="active" data-mode="all">全部</button><button data-mode="sell">我有寄倉</button><button data-mode="buy">我想要</button></div>
 <section id="grid" class="grid"></section>
-<section class="form"><h2>快速產生配對訊息</h2><p class="hint">填好後按一下即可複製，再貼到康樂富 LINE 私群。資料不會公開儲存在網頁上。</p>
+<section class="form"><h2>快速產生配對訊息</h2><p class="hint">請依官方兌換表單確認所需組數；填好後按一下即可複製，再貼到康樂富 LINE 私群。資料不會公開儲存在網頁上。</p>
 <div class="fields">
 <select id="type"><option>我有寄倉想轉讓</option><option>我想購買</option></select>
 <input id="name" placeholder="稱呼">
 <input id="product" class="wide" placeholder="產品名稱">
-<input id="qty" placeholder="數量／組數"><input id="price" placeholder="希望價格（可留空）">
+<input id="qty" placeholder="寄倉組數（例如：1組、6組）"><input id="price" placeholder="希望價格（可留空）">
 <textarea id="note" class="wide" placeholder="補充說明，例如效期、交付方式"></textarea>
 </div><button class="primary" id="copy">複製訊息貼到 LINE</button></section>
 </main><footer>此頁為會員互助資訊整理工具，實際交易內容由雙方自行確認。</footer>
@@ -40,6 +40,6 @@ const grid=document.querySelector("#grid"),q=document.querySelector("#q"),cat=do
 function draw(){let s=q.value.toLowerCase(),c=cat.value;grid.innerHTML=products.filter(p=>(!s||p[0].toLowerCase().includes(s))&&(!c||p[1]===c)).map(p=>`<article class="card"><div class="pic">${p[2]}</div><h3>${p[0]}</h3><span class="tag">${p[1]}</span></article>`).join("")||"<p>找不到符合的產品。</p>"}
 q.oninput=cat.onchange=draw;draw();
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelector("#type").selectedIndex=b.dataset.mode==="buy"?1:0;document.querySelector(".form").scrollIntoView({behavior:"smooth"})});
-document.querySelector("#copy").onclick=async()=>{let v=id=>document.querySelector(id).value.trim();let msg=`【康樂富寄倉互助配對】\n${v("#type")}\n稱呼：${v("#name")||"未填"}\n產品：${v("#product")||"未填"}\n數量：${v("#qty")||"未填"}\n希望價格：${v("#price")||"雙方討論"}\n補充：${v("#note")||"無"}\n\n有需要的夥伴歡迎私訊，謝謝 😊`;try{await navigator.clipboard.writeText(msg);alert("已複製，可以貼到 LINE 私群囉！")}catch(e){prompt("請複製以下內容：",msg)}};
+document.querySelector("#copy").onclick=async()=>{let v=id=>document.querySelector(id).value.trim();let msg=`【康樂富寄倉互助配對】\n${v("#type")}\n稱呼：${v("#name")||"未填"}\n產品：${v("#product")||"未填"}\n寄倉組數：${v("#qty")||"未填"}\n兌換內容：請依官方表單標示確認\n希望價格：${v("#price")||"雙方討論"}\n補充：${v("#note")||"無"}\n\n有需要的夥伴歡迎私訊，謝謝 😊`;try{await navigator.clipboard.writeText(msg);alert("已複製，可以貼到 LINE 私群囉！")}catch(e){prompt("請複製以下內容：",msg)}};
 </script></body></html>
 <!-- trigger GitHub Pages deployment -->
