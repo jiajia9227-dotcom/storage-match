@@ -1,45 +1,330 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>康樂富寄倉互助配對</title>
-<style>
-:root{--coral:#d96c5f;--cream:#fffaf3;--ink:#43352f;--muted:#806f67;--line:#eadbd0}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:var(--cream);color:var(--ink)}
-header{padding:52px 20px 38px;text-align:center;background:linear-gradient(135deg,#f5d4c7,#fff4e6)}
-header span{display:inline-block;background:#fff8;padding:7px 13px;border-radius:99px;color:#a54b42;font-weight:700}
-h1{font-size:clamp(30px,6vw,54px);margin:16px 0 10px}header p{max-width:720px;margin:auto;line-height:1.8;color:var(--muted)}
-.wrap{max-width:1100px;margin:auto;padding:24px 18px 60px}.notice{background:white;border:1px solid var(--line);border-radius:18px;padding:20px;line-height:1.8;margin-bottom:22px}
-.controls{display:grid;grid-template-columns:1fr auto;gap:12px;margin:22px 0}.controls input,.controls select,input,select,textarea{border:1px solid var(--line);border-radius:12px;padding:13px;background:white;font-size:16px}
-.tabs{display:flex;gap:10px;margin-bottom:18px}.tabs button,.primary{border:0;border-radius:999px;padding:12px 18px;font-weight:700;cursor:pointer}.tabs button.active,.primary{background:var(--coral);color:white}.tabs button{background:#f1e4dc;color:var(--ink)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:15px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 5px 18px #6543210b}.pic{height:120px;border-radius:14px;background:linear-gradient(145deg,#fff1e8,#f5ddd4);display:grid;place-items:center;font-size:44px}.card h3{font-size:17px;margin:14px 0 8px;line-height:1.45}.tag{font-size:13px;color:#a34f46;background:#fff0ed;border-radius:99px;padding:5px 9px;display:inline-block}
-.form{margin-top:34px;background:white;border:1px solid var(--line);border-radius:22px;padding:24px}.form h2{margin-top:0}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}textarea{min-height:90px;resize:vertical}.primary{margin-top:14px;width:100%}.hint{font-size:14px;color:var(--muted);line-height:1.7}footer{text-align:center;color:var(--muted);padding:25px}
-@media(max-width:650px){.controls,.fields{grid-template-columns:1fr}.wide{grid-column:auto}header{padding-top:38px}}
-</style></head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>康樂富寄倉互助配對</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--coral:#d96c5f;--cream:#fffaf3;--ink:#43352f;--muted:#806f67;--line:#eadbd0;--green:#4f8069}
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;background:var(--cream);color:var(--ink)}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}
+    header{padding:42px 18px 30px;text-align:center;background:linear-gradient(135deg,#f4cfc3,#fff3e3)}
+    header h1{font-size:clamp(29px,6vw,48px);margin:10px 0}header p{max-width:760px;margin:auto;line-height:1.75;color:var(--muted)}
+    .badge{display:inline-block;border-radius:99px;padding:6px 12px;background:#fff9;color:#a34f46;font-weight:700}
+    .wrap{max-width:1100px;margin:auto;padding:20px 16px 70px}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;margin:16px 0;box-shadow:0 6px 20px #76522a0b}
+    .notice{line-height:1.8}.nav{display:flex;gap:8px;overflow:auto;padding:4px 0 10px}.nav button{white-space:nowrap;border:0;border-radius:99px;padding:11px 16px;background:#efe3db;color:var(--ink);font-weight:700}.nav button.active,.primary{background:var(--coral);color:white}
+    h2{margin:0 0 14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wide{grid-column:1/-1}
+    input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}textarea{min-height:86px}
+    label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}.primary,.secondary,.danger{border:0;border-radius:12px;padding:12px 16px;font-weight:700}.primary{width:100%}.secondary{background:#efe6df;color:var(--ink)}.danger{background:#fee4e1;color:#a33b31}
+    .hidden{display:none!important}.muted{color:var(--muted);font-size:14px;line-height:1.7}.success{color:var(--green);font-weight:700}.error{color:#b53d35;font-weight:700}
+    .summary{border:1px dashed #d9b9aa;border-radius:14px;padding:14px;background:#fffaf7;line-height:1.7}
+    .category{margin:22px 0 8px;padding:9px 12px;border-radius:10px;background:#f3e5dc;font-weight:800}
+    .product{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:12px;padding:12px 4px;border-bottom:1px solid #f1e7e0}.product b{display:block}.product small{display:block;color:var(--muted);margin-top:5px;line-height:1.55}.qty{display:flex;align-items:center;gap:5px}.qty button{width:30px;height:30px;border:0;border-radius:9px;background:#efe4dc}.qty input{text-align:center;padding:7px}
+    .card{border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0}.card h3{margin:0 0 8px}.status{display:inline-block;padding:4px 9px;border-radius:99px;background:#f2e6df;font-size:13px}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.stat{text-align:center;background:#fff7f1;border-radius:13px;padding:12px}.stat b{display:block;font-size:22px}
+    dialog{border:0;border-radius:18px;max-width:520px;width:calc(100% - 28px);padding:22px;box-shadow:0 18px 70px #0004}dialog::backdrop{background:#2d211c99}
+    @media(max-width:650px){.grid2{grid-template-columns:1fr}.wide{grid-column:auto}.product{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr 1fr}}
+  </style>
+</head>
 <body>
-<header><span>私群限定・互助使用</span><h1>康樂富寄倉互助配對</h1><p>有寄倉想轉讓、或沒有寄倉想單買，都可以在這裡快速整理需求，再貼到 LINE 私群互相配合。</p></header>
-<main class="wrap">
-<div class="notice">🌿 <b>寄倉沒有期限</b>，可以先放著慢慢使用，其實都還是用得完的 😊<br>不吃保健品，也能幫家人兌換寢具組、護腰帶等生活用品，比較不會浪費。<br><br>📌 <b>配對以「寄倉組數」為單位</b>：每一組實際可兌換幾盒，或需輸入幾組才是一套，請以官方兌換表單上的標示為準。例如表單可能標示「輸入 1 為 5 盒」或「輸入 6 為 1 套」。建議先確認想兌換的品項需要幾組，再進行配對。配對價格、付款與交付方式請雙方自行確認。</div>
-<div class="controls"><input id="q" placeholder="搜尋產品，例如：魚油、益生菌、護腰帶"><select id="cat"><option value="">全部分類</option><option>營養保健</option><option>飲品</option><option>生活用品</option><option>美容保養</option></select></div>
-<div class="tabs"><button class="active" data-mode="all">全部</button><button data-mode="sell">我有寄倉</button><button data-mode="buy">我想要</button></div>
-<section id="grid" class="grid"></section>
-<section class="form"><h2>快速產生配對訊息</h2><p class="hint">請依官方兌換表單確認所需組數；填好後按一下即可複製，再貼到康樂富 LINE 私群。資料不會公開儲存在網頁上。</p>
-<div class="fields">
-<select id="type"><option>我有寄倉想轉讓</option><option>我想購買</option></select>
-<input id="name" placeholder="稱呼">
-<input id="product" class="wide" placeholder="產品名稱">
-<input id="qty" placeholder="寄倉組數（例如：1組、6組）"><input id="price" placeholder="希望價格（可留空）">
-<textarea id="note" class="wide" placeholder="補充說明，例如效期、交付方式"></textarea>
-</div><button class="primary" id="copy">複製訊息貼到 LINE</button></section>
-</main><footer>此頁為會員互助資訊整理工具，實際交易內容由雙方自行確認。</footer>
+  <header>
+    <span class="badge">私群限定・公平輪替</span>
+    <h1>康樂富寄倉互助配對</h1>
+    <p>依官方兌換表單建立訂單，配對後立即預扣組數；寄倉者完成訂單後結案，並自動輪到下一位。</p>
+  </header>
+  <main class="wrap">
+    <section class="panel notice">
+      🌿 寄倉沒有期限，可以先放著慢慢使用。配對以「官方表單輸入數字」計算寄倉組數；產品盒數、套裝及贈品均依表單標示為準。
+    </section>
+
+    <section id="authPanel" class="panel">
+      <h2>會員登入</h2>
+      <p class="muted">輸入 Email 後，系統會寄出登入連結。LINE 與收件資料只有配對雙方能查看。</p>
+      <div class="grid2">
+        <div><label>您的稱呼</label><input id="loginName" placeholder="例如：佳佳"></div>
+        <div><label>Email</label><input id="loginEmail" type="email" placeholder="name@example.com"></div>
+      </div>
+      <button class="primary" id="loginBtn" style="margin-top:12px">寄送登入連結</button>
+      <p id="authMsg"></p>
+    </section>
+
+    <section id="app" class="hidden">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+          <div>您好，<b id="helloName">會員</b></div>
+          <button class="secondary" id="logoutBtn">登出</button>
+        </div>
+        <div class="nav" style="margin-top:14px">
+          <button class="active" data-tab="market">配對大廳</button>
+          <button data-tab="seller">登記寄倉</button>
+          <button data-tab="buyer">建立訂單</button>
+          <button data-tab="mine">我的配對</button>
+          <button data-tab="profile">聯絡資料</button>
+        </div>
+      </div>
+
+      <section id="tab-market" class="tab panel">
+        <h2>配對大廳</h2>
+        <div id="marketStats" class="stats"></div>
+        <h3>等待配對的訂單</h3>
+        <div id="openOrders"></div>
+      </section>
+
+      <section id="tab-seller" class="tab panel hidden">
+        <h2>登記我的寄倉</h2>
+        <p class="muted">輸入目前可供配對的總組數。配對成立會立即預扣，完成後結案；取消則自動補回。</p>
+        <div class="grid2">
+          <div><label>寄倉總組數</label><input id="offerGroups" type="number" min="0" step="1" placeholder="例如：20"></div>
+          <div><label>是否開放配對</label><select id="offerActive"><option value="true">開放配對</option><option value="false">暫停配對</option></select></div>
+        </div>
+        <button class="primary" id="saveOfferBtn" style="margin-top:12px">儲存寄倉資料</button>
+        <div id="offerSummary" class="summary" style="margin-top:14px"></div>
+      </section>
+
+      <section id="tab-buyer" class="tab panel hidden">
+        <h2>建立完整訂單</h2>
+        <p class="muted">請照官方兌換表單輸入。一般商品輸入 1 即使用 1 組；專案套組會依表單以 3、4、6 組為一套。</p>
+        <div id="catalog"></div>
+        <div class="summary" style="position:sticky;bottom:8px;margin-top:18px">
+          <b>訂單共需 <span id="totalGroups">0</span> 組寄倉</b>
+          <div id="orderPreview" class="muted">尚未選擇產品</div>
+          <button class="primary" id="submitOrderBtn" style="margin-top:10px">送出並依公平順序配對</button>
+        </div>
+      </section>
+
+      <section id="tab-mine" class="tab panel hidden">
+        <h2>我的配對</h2>
+        <div id="myOrders"></div>
+      </section>
+
+      <section id="tab-profile" class="tab panel hidden">
+        <h2>聯絡與收件資料</h2>
+        <p class="muted">這些資料不會公開顯示，只有配對成功的對方可以查看。</p>
+        <div class="grid2">
+          <div><label>顯示稱呼</label><input id="profileName"></div>
+          <div><label>LINE ID／LINE 聯絡方式</label><input id="lineId"></div>
+          <div><label>收件人</label><input id="recipientName"></div>
+          <div><label>電話</label><input id="phone"></div>
+          <div class="wide"><label>寄送地址</label><textarea id="address"></textarea></div>
+        </div>
+        <button class="primary" id="saveProfileBtn" style="margin-top:12px">儲存資料</button>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="contactDialog">
+    <h2>配對聯絡資料</h2>
+    <div id="contactBody"></div>
+    <button class="secondary" onclick="document.querySelector('#contactDialog').close()" style="margin-top:14px;width:100%">關閉</button>
+  </dialog>
+
 <script>
-const products=[
-["科技燕窩美妍賦活飲","飲品","🌸"],["科技燕窩全能飲","飲品","🥤"],["青春源沐淨 D","美容保養","🤍"],["青春源煥活 R","美容保養","🤎"],["青春源倍護 P","美容保養","🩷"],["頂級高濃度魚油","營養保健","🐟"],["多采益生菌 EX","營養保健","🩵"],["活力 BB EX","營養保健","🍊"],["鈣鎂鋅 EX","營養保健","💊"],["紅麴活力循 EX","營養保健","❤️"],["納豆紅麴 Q10","營養保健","🫀"],["清醇活循飲","飲品","🧡"],["膠原關鍵穩 EX","營養保健","🦵"],["龜鹿關鍵飲","飲品","🦌"],["樂高成長飲","飲品","🌱"],["艾康敏益生菌","營養保健","🩵"],["小心甘 EX","營養保健","❤️"],["馬卡活力久 EX","營養保健","⚡"],["極光白賦美 EX","美容保養","✨"],["蔓越莓私密對策","營養保健","🩷"],["雙重支撐護腰帶","生活用品","🩹"],["健康循環能量墊","生活用品","🛏️"],["超能雙感鑽石被","生活用品","🛌"],["石墨烯量子共振貼布","生活用品","🔥"],["逆時光超導美容儀","美容保養","💆"]
+const SUPABASE_URL='https://lfemfwneglgtwvkjadvz.supabase.co';
+const SUPABASE_KEY='sb_publishable_i4zR037176sX4c8GDj9mHQ_HSM2_F93';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let session=null,profile=null,myOffer=null;
+
+const catalog=[
+ ['效期／活動品項',[
+  ['龜鹿關鍵飲（25ml×7包）','輸入 1：7盒＋贈貼布3包','2026/09/10',1],
+  ['科技燕窩美妍賦活飲禮盒（12包）','輸入 1：4盒＋贈慕斯3瓶、活膚露1瓶','2026/10/13',1],
+  ['科技燕窩美妍賦活飲（30ml×10包）','輸入 1：5盒＋贈12入禮盒2盒','2026/10/23',1],
+  ['科技燕窩賦活飲白金版（25ml×10包）','輸入 1：7盒＋贈12入禮盒1盒','2026/12/01',1],
+  ['專案優惠① D×3＋R×3','輸入 6：1套，贈美妍賦活飲15盒＋禮盒2盒','',6],
+  ['專案優惠② P×3','輸入 3：1套，贈美妍賦活飲8盒＋禮盒1盒','',3],
+  ['專案優惠③ D×3＋R×3','輸入 6：1套，贈DSK系列大禮包','',6],
+  ['專案優惠④ P×3','輸入 3：1套，贈DSK系列小禮包','',3]
+ ]],
+ ['青春源 DRP 系列',[
+  ['YouthFountain D 青春源沐淨','依官方表單剩餘數選擇','',1],
+  ['YouthFountain R 青春源煥活','依官方表單剩餘數選擇','',1],
+  ['YouthFountain P 青春源倍護','依官方表單剩餘數選擇','',1]
+ ]],
+ ['飲品與機能保健',[
+  ['科技燕窩全能飲（50ml×8包）','輸入 1：3盒','',1],
+  ['智明靈光飲（25ml×10包）','輸入 1：5盒','',1],
+  ['活力多醣飲（25ml×7包）','輸入 1：7盒','',1],
+  ['超易視晶彩葉黃素（30粒）','輸入 1：8盒','',1],
+  ['紅麴活力循 EX（30粒）','輸入 1：8盒','',1],
+  ['納豆紅麴 Q10（60粒）','輸入 1：5盒','',1],
+  ['清醇複方活循飲（30ml×10包）','輸入 1：5盒','',1],
+  ['膠原關鍵穩 EX（30粒）','輸入 1：5盒','',1],
+  ['樂高成長飲（25ml×7包）','輸入 1：7盒','',1],
+  ['艾康敏益生菌（30粒）','輸入 1：5盒','',1],
+  ['小心甘 EX（30粒）','輸入 1：8盒','',1],
+  ['馬卡活力久 EX（30粒）','輸入 1：8盒','',1],
+  ['極光白賦美 EX（90錠）','輸入 1：5盒＋贈慕斯1瓶、賦活露1瓶','',1],
+  ['蔓越莓私密對策（30包）','輸入 1：5盒','',1],
+  ['艾立眠 EX（30粒）','輸入 1：8盒','',1],
+  ['攝護力（60粒）','輸入 1：5盒','',1],
+  ['衛樂寧（60粒）','輸入 1：5盒','',1],
+  ['頂級高濃度魚油罐裝版（60粒）','輸入 1：5盒','',1],
+  ['多采益生菌 EX（30包）','輸入 1：5盒','',1],
+  ['活力 BB EX（90錠）','輸入 1：5盒＋贈慕斯1瓶、雙精萃1瓶','',1],
+  ['鈣鎂鋅 EX（90錠）','輸入 1：6盒','',1],
+  ['頂級高濃度魚油獨立排裝版（60粒）','輸入 1：5盒','',1],
+  ['黃金比例 3:8（60粒）','輸入 1：5盒','',1],
+  ['閃澱油切（60粒）','輸入 1：5盒','',1],
+  ['動動爆燃（60粒）','輸入 1：5盒','',1],
+  ['美妍纖姿凍（10條）','輸入 1：6盒＋贈慕斯、活膚露、精華乳各1瓶','',1]
+ ]],
+ ['生活用品與套組',[
+  ['逆時光超導美容儀','輸入 1：1台＋贈品依官方表單','',1],
+  ['石墨烯量子共振貼布（10片）','輸入 1：10包','',1],
+  ['超能雙感鑽石被（經典藍）','輸入 2：1床，請選宅配','',2],
+  ['超能雙感鑽石被（奶茶棕）','輸入 2：1床，請選宅配','',2],
+  ['健康循環能量墊','輸入 2：1張，請選宅配','',2],
+  ['科技智能按摩組（筒中黑）','輸入 1：1套','',1],
+  ['科技智能按摩組（筒中灰）','輸入 1：1套','',1],
+  ['科技按摩腰帶組','輸入 4：1套','',4]
+ ]],
+ ['2盒任搭為1組',[
+  ['雙重支撐護腰帶 M','2盒任搭為1組','',1,'mix2'],
+  ['雙重支撐護腰帶 L','2盒任搭為1組','',1,'mix2'],
+  ['雙重支撐護腰帶 XL','2盒任搭為1組','',1,'mix2'],
+  ['雙重支撐護腰帶 2XL','2盒任搭為1組','',1,'mix2']
+ ]],
+ ['5盒任搭為1組',[
+  ['科技營養餐 經典濃醇可可（10包）','5盒任搭為1組','',1,'mix5'],
+  ['科技營養餐 日式海鮮濃湯（10包）','5盒任搭為1組','',1,'mix5']
+ ]]
 ];
-const grid=document.querySelector("#grid"),q=document.querySelector("#q"),cat=document.querySelector("#cat");
-function draw(){let s=q.value.toLowerCase(),c=cat.value;grid.innerHTML=products.filter(p=>(!s||p[0].toLowerCase().includes(s))&&(!c||p[1]===c)).map(p=>`<article class="card"><div class="pic">${p[2]}</div><h3>${p[0]}</h3><span class="tag">${p[1]}</span></article>`).join("")||"<p>找不到符合的產品。</p>"}
-q.oninput=cat.onchange=draw;draw();
-document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelector("#type").selectedIndex=b.dataset.mode==="buy"?1:0;document.querySelector(".form").scrollIntoView({behavior:"smooth"})});
-document.querySelector("#copy").onclick=async()=>{let v=id=>document.querySelector(id).value.trim();let msg=`【康樂富寄倉互助配對】\n${v("#type")}\n稱呼：${v("#name")||"未填"}\n產品：${v("#product")||"未填"}\n寄倉組數：${v("#qty")||"未填"}\n兌換內容：請依官方表單標示確認\n希望價格：${v("#price")||"雙方討論"}\n補充：${v("#note")||"無"}\n\n有需要的夥伴歡迎私訊，謝謝 😊`;try{await navigator.clipboard.writeText(msg);alert("已複製，可以貼到 LINE 私群囉！")}catch(e){prompt("請複製以下內容：",msg)}};
-</script></body></html>
-<!-- trigger GitHub Pages deployment -->
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function flash(msg,type='success'){alert(msg)}
+
+function renderCatalog(){
+ let html='';
+ catalog.forEach(([category,items])=>{
+  html+=`<div class="category">${esc(category)}</div>`;
+  items.forEach((p,i)=>{
+   const id='p_'+btoa(unescape(encodeURIComponent(p[0]))).replace(/[^a-z0-9]/gi,'').slice(0,14)+i;
+   p.id=id;
+   html+=`<div class="product"><div><b>${esc(p[0])}</b><small>${esc(p[1])}${p[2]?`<br>⚠️ 效期：${esc(p[2])}`:''}</small></div><div class="qty"><button data-d="-1" data-id="${id}">−</button><input id="${id}" data-name="${esc(p[0])}" data-rule="${p[4]||''}" data-step="${p[3]}" type="number" min="0" step="${p[3]}" value="0"><button data-d="1" data-id="${id}">＋</button></div></div>`;
+  });
+ });
+ $('#catalog').innerHTML=html;
+ $('#catalog').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-id]');if(!b)return;
+  const input=$('#'+b.dataset.id),step=Number(input.dataset.step)||1;
+  input.value=Math.max(0,Number(input.value||0)+Number(b.dataset.d)*step);updateOrder();
+ });
+ $('#catalog').addEventListener('input',updateOrder);
+}
+function orderData(){
+ const items=[];let regular=0,mix2=0,mix5=0;
+ document.querySelectorAll('#catalog input[type=number]').forEach(x=>{
+  const qty=Number(x.value||0);if(!qty)return;
+  items.push({name:x.dataset.name,input:qty,rule:x.dataset.rule||'regular'});
+  if(x.dataset.rule==='mix2')mix2+=qty;else if(x.dataset.rule==='mix5')mix5+=qty;else regular+=qty;
+ });
+ return {items,groups:regular+Math.ceil(mix2/2)+Math.ceil(mix5/5),mix2,mix5};
+}
+function updateOrder(){
+ const o=orderData();$('#totalGroups').textContent=o.groups;
+ $('#orderPreview').innerHTML=o.items.length?o.items.map(x=>`${esc(x.name)}：輸入 ${x.input}`).join('<br>'):'尚未選擇產品';
+}
+
+async function init(){
+ renderCatalog();
+ const {data}=await db.auth.getSession();session=data.session;
+ if(session)await enterApp();
+ db.auth.onAuthStateChange(async(_,s)=>{session=s;if(s)await enterApp();});
+}
+async function enterApp(){
+ $('#authPanel').classList.add('hidden');$('#app').classList.remove('hidden');
+ const uid=session.user.id;
+ const [{data:p},{data:c},{data:o}]=await Promise.all([
+  db.from('profiles').select('*').eq('id',uid).single(),
+  db.from('private_contacts').select('*').eq('user_id',uid).single(),
+  db.from('storage_offers').select('*').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1).maybeSingle()
+ ]);
+ profile=p||{display_name:session.user.email.split('@')[0]};myOffer=o;
+ $('#helloName').textContent=profile.display_name;$('#profileName').value=profile.display_name||'';
+ $('#lineId').value=c?.line_id||'';$('#phone').value=c?.phone||'';$('#recipientName').value=c?.recipient_name||'';$('#address').value=c?.address||'';
+ $('#offerGroups').value=o?.total_groups??'';$('#offerActive').value=String(o?.active??true);
+ renderOffer();await refreshAll();
+}
+async function refreshAll(){await Promise.all([loadMarket(),loadMyOrders()])}
+function renderOffer(){
+ $('#offerSummary').innerHTML=myOffer?`總登記：<b>${myOffer.total_groups}</b> 組｜可配對：<b>${myOffer.available_groups}</b> 組｜配對中：<b>${myOffer.reserved_groups}</b> 組`:'尚未登記寄倉';
+}
+
+$('#loginBtn').onclick=async()=>{
+ const email=$('#loginEmail').value.trim(),name=$('#loginName').value.trim();
+ if(!email)return flash('請輸入 Email','error');
+ const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0],data:{display_name:name||email.split('@')[0]}}});
+ $('#authMsg').className=error?'error':'success';$('#authMsg').textContent=error?error.message:'登入連結已寄出，請到信箱點擊連結。';
+};
+$('#logoutBtn').onclick=async()=>{await db.auth.signOut();location.reload()};
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));
+ document.querySelectorAll('.tab').forEach(x=>x.classList.add('hidden'));$('#tab-'+b.dataset.tab).classList.remove('hidden');
+ if(b.dataset.tab==='market'||b.dataset.tab==='mine')refreshAll();
+});
+
+$('#saveProfileBtn').onclick=async()=>{
+ const uid=session.user.id,name=$('#profileName').value.trim();
+ const a=await db.from('profiles').update({display_name:name}).eq('id',uid);
+ const b=await db.from('private_contacts').update({line_id:$('#lineId').value.trim(),phone:$('#phone').value.trim(),recipient_name:$('#recipientName').value.trim(),address:$('#address').value.trim(),updated_at:new Date().toISOString()}).eq('user_id',uid);
+ if(a.error||b.error)return flash(a.error?.message||b.error?.message,'error');
+ profile.display_name=name;$('#helloName').textContent=name;flash('聯絡與收件資料已儲存');
+};
+
+$('#saveOfferBtn').onclick=async()=>{
+ const total=Number($('#offerGroups').value);if(!Number.isInteger(total)||total<0)return flash('請輸入正確組數','error');
+ let res;
+ if(myOffer){
+  const used=myOffer.total_groups-myOffer.available_groups-myOffer.reserved_groups;
+  if(total<used+myOffer.reserved_groups)return flash('新總數不能小於已完成及配對中的組數','error');
+  res=await db.from('storage_offers').update({total_groups:total,available_groups:total-used-myOffer.reserved_groups,active:$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('id',myOffer.id).select().single();
+ }else{
+  res=await db.from('storage_offers').insert({owner_id:session.user.id,total_groups:total,available_groups:total,active:$('#offerActive').value==='true'}).select().single();
+ }
+ if(res.error)return flash(res.error.message,'error');myOffer=res.data;renderOffer();flash('寄倉資料已更新');refreshAll();
+};
+
+$('#submitOrderBtn').onclick=async()=>{
+ const o=orderData();if(!o.items.length)return flash('請先選擇產品','error');
+ if(o.mix2%2!==0)return flash('護腰帶需湊滿2盒任搭為1組','error');
+ if(o.mix5%5!==0)return flash('營養餐需湊滿5盒任搭為1組','error');
+ const {data,error}=await db.from('orders').insert({buyer_id:session.user.id,items:o.items,required_groups:o.groups}).select().single();
+ if(error)return flash(error.message,'error');
+ const m=await db.rpc('match_order',{p_order_id:data.id});
+ if(m.error)return flash(m.error.message,'error');
+ document.querySelectorAll('#catalog input[type=number]').forEach(x=>x.value=0);updateOrder();
+ flash(m.data?.status==='matched'?'已依公平順序配對成功！':'訂單已建立，目前等待有足夠組數的寄倉者。');
+ refreshAll();
+};
+
+function itemText(items){return (items||[]).map(x=>`${esc(x.name)}：輸入 ${x.input}`).join('<br>')}
+async function loadMarket(){
+ const [{data:orders},{data:offers}]=await Promise.all([
+  db.from('orders').select('*').eq('status','pending').order('created_at'),
+  db.from('storage_offers').select('*').eq('active',true)
+ ]);
+ const available=(offers||[]).reduce((n,x)=>n+x.available_groups,0);
+ $('#marketStats').innerHTML=`<div class="stat"><b>${offers?.length||0}</b>位寄倉者</div><div class="stat"><b>${available}</b>可配對組數</div><div class="stat"><b>${orders?.length||0}</b>等待訂單</div>`;
+ $('#openOrders').innerHTML=orders?.length?orders.map(o=>`<div class="card"><span class="status">等待配對</span><h3>需要 ${o.required_groups} 組</h3><div class="muted">${itemText(o.items)}</div></div>`).join(''):'<p class="muted">目前沒有等待中的訂單。</p>';
+}
+async function loadMyOrders(){
+ const {data:orders,error}=await db.from('orders').select('*').or(`buyer_id.eq.${session.user.id},seller_id.eq.${session.user.id}`).order('created_at',{ascending:false});
+ if(error){$('#myOrders').innerHTML=`<p class="error">${esc(error.message)}</p>`;return}
+ $('#myOrders').innerHTML=orders?.length?orders.map(o=>{
+  const seller=o.seller_id===session.user.id;
+  return `<div class="card"><span class="status">${({pending:'等待配對',matched:'已配對',completed:'已完成',cancelled:'已取消'})[o.status]}</span><h3>${seller?'我承接的訂單':'我的購買訂單'}・${o.required_groups} 組</h3><div class="muted">${itemText(o.items)}</div><div class="row">${o.status==='matched'?`<button class="secondary" onclick="showContact('${o.id}','${seller?'buyer':'seller'}')">查看對方 LINE／收件資料</button>`:''}${seller&&o.status==='matched'?`<button class="primary" style="width:auto" onclick="completeOrder('${o.id}')">完成訂單</button>`:''}${['pending','matched'].includes(o.status)?`<button class="danger" onclick="cancelOrder('${o.id}')">取消</button>`:''}</div></div>`;
+ }).join(''):'<p class="muted">目前沒有配對紀錄。</p>';
+}
+window.completeOrder=async id=>{if(!confirm('確認已完成下單寄送？完成後將正式結案。'))return;const r=await db.rpc('complete_order',{p_order_id:id});if(r.error)return flash(r.error.message,'error');flash('訂單已完成');refreshAll()};
+window.cancelOrder=async id=>{if(!confirm('確定取消？若已配對，預扣組數會補回。'))return;const r=await db.rpc('cancel_order',{p_order_id:id});if(r.error)return flash(r.error.message,'error');flash('已取消訂單');refreshAll()};
+window.showContact=async(id,side)=>{
+ const {data:o}=await db.from('orders').select('*').eq('id',id).single();const uid=side==='buyer'?o.buyer_id:o.seller_id;
+ const [{data:p},{data:c}]=await Promise.all([db.from('profiles').select('*').eq('id',uid).single(),db.from('private_contacts').select('*').eq('user_id',uid).single()]);
+ $('#contactBody').innerHTML=`<p><b>${esc(p?.display_name||'配對會員')}</b></p><p>LINE：${esc(c?.line_id||'未填')}</p><p>收件人：${esc(c?.recipient_name||'未填')}</p><p>電話：${esc(c?.phone||'未填')}</p><p>地址：${esc(c?.address||'未填')}</p>`;$('#contactDialog').showModal();
+};
+init();
+</script>
+</body>
+</html>
