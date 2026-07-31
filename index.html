@@ -229,8 +229,28 @@ function updateOrder(){
 
 async function init(){
  renderCatalog();
- const {data}=await db.auth.getSession();session=data.session;
- if(session)await enterApp();
+ const url=new URL(location.href);
+ let callbackError=null;
+ if(url.searchParams.get('code')){
+  const result=await db.auth.exchangeCodeForSession(url.searchParams.get('code'));
+  callbackError=result.error;
+ }
+ const hash=new URLSearchParams(location.hash.replace(/^#/,''));
+ if(!callbackError&&hash.get('access_token')&&hash.get('refresh_token')){
+  const result=await db.auth.setSession({
+   access_token:hash.get('access_token'),
+   refresh_token:hash.get('refresh_token')
+  });
+  callbackError=result.error;
+ }
+ const {data,error}=await db.auth.getSession();session=data.session;
+ if(session){
+  history.replaceState({},document.title,location.pathname);
+  await enterApp();
+ }else if(callbackError||error){
+  $('#authMsg').className='error';
+  $('#authMsg').textContent='登入連結無法使用，請回到信箱點最新一封登入信；若仍無法登入，再重新寄送一次。';
+ }
  db.auth.onAuthStateChange(async(_,s)=>{session=s;if(s)await enterApp();});
 }
 async function enterApp(){
