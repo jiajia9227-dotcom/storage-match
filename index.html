@@ -40,15 +40,15 @@
 
     <section id="authPanel" class="panel">
       <h2>會員登入</h2>
-      <p class="muted">輸入 Email 後，系統會寄出登入連結。LINE 與收件資料只有配對雙方能查看。</p>
+      <p class="muted">第一次使用請設定密碼並註冊；之後可直接用 Email 與密碼登入。LINE 與收件資料只有配對雙方能查看。</p>
       <div class="grid2">
         <div><label>您的稱呼</label><input id="loginName" placeholder="例如：佳佳"></div>
         <div><label>Email</label><input id="loginEmail" type="email" placeholder="name@example.com"></div>
-        <div class="wide"><label>信件中的 6 位數驗證碼</label><input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="例如：123456"></div>
+        <div class="wide"><label>密碼（至少 6 個字元）</label><input id="loginPassword" type="password" minlength="6" autocomplete="current-password" placeholder="請輸入密碼"></div>
       </div>
       <div class="grid2" style="margin-top:12px">
-        <button class="secondary" id="loginBtn">寄送驗證碼</button>
-        <button class="primary" id="verifyBtn">驗證並登入</button>
+        <button class="secondary" id="registerBtn">第一次使用・註冊</button>
+        <button class="primary" id="loginBtn">登入</button>
       </div>
       <p id="authMsg"></p>
     </section>
@@ -277,24 +277,38 @@ function renderOffer(){
 }
 
 $('#loginBtn').onclick=async()=>{
- const email=$('#loginEmail').value.trim(),name=$('#loginName').value.trim();
+ const email=$('#loginEmail').value.trim(),password=$('#loginPassword').value;
  if(!email)return flash('請輸入 Email','error');
- const {error}=await db.auth.signInWithOtp({email,options:{data:{display_name:name||email.split('@')[0]}}});
- $('#authMsg').className=error?'error':'success';$('#authMsg').textContent=error?error.message:'驗證碼已寄出，請查看最新信件並輸入 6 位數字。';
-};
-$('#verifyBtn').onclick=async()=>{
- const email=$('#loginEmail').value.trim(),token=$('#loginCode').value.trim();
- if(!email)return flash('請輸入 Email','error');
- if(!/^\d{6}$/.test(token))return flash('請輸入信件中的 6 位數驗證碼','error');
- $('#authMsg').className='muted';$('#authMsg').textContent='正在驗證…';
- const {data,error}=await db.auth.verifyOtp({email,token,type:'email'});
+ if(password.length<6)return flash('密碼至少需要 6 個字元','error');
+ $('#authMsg').className='muted';$('#authMsg').textContent='正在登入…';
+ const {data,error}=await db.auth.signInWithPassword({email,password});
  if(error){
   $('#authMsg').className='error';
-  $('#authMsg').textContent='驗證碼錯誤或已過期，請確認是最新一封信中的 6 位數字。';
+  $('#authMsg').textContent='Email 或密碼不正確；第一次使用請先按「註冊」。';
   return;
  }
  session=data.session;
  if(session)await enterApp();
+};
+$('#registerBtn').onclick=async()=>{
+ const email=$('#loginEmail').value.trim(),password=$('#loginPassword').value,name=$('#loginName').value.trim();
+ if(!email)return flash('請輸入 Email','error');
+ if(!name)return flash('請輸入您的稱呼','error');
+ if(password.length<6)return flash('密碼至少需要 6 個字元','error');
+ $('#authMsg').className='muted';$('#authMsg').textContent='正在建立帳號…';
+ const {data,error}=await db.auth.signUp({email,password,options:{data:{display_name:name}}});
+ if(error){
+  $('#authMsg').className='error';
+  $('#authMsg').textContent=error.message.includes('already registered')?'這個 Email 已註冊，請直接按「登入」。':'註冊失敗：'+error.message;
+  return;
+ }
+ session=data.session;
+ if(session){
+  await enterApp();
+ }else{
+  $('#authMsg').className='error';
+  $('#authMsg').textContent='帳號已建立，但 Supabase 尚未關閉信箱確認；請通知管理員完成設定。';
+ }
 };
 $('#logoutBtn').onclick=async()=>{await db.auth.signOut();location.reload()};
 
