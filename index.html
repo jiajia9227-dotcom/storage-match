@@ -44,8 +44,12 @@
       <div class="grid2">
         <div><label>您的稱呼</label><input id="loginName" placeholder="例如：佳佳"></div>
         <div><label>Email</label><input id="loginEmail" type="email" placeholder="name@example.com"></div>
+        <div class="wide"><label>信件中的 6 位數驗證碼</label><input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="例如：123456"></div>
       </div>
-      <button class="primary" id="loginBtn" style="margin-top:12px">寄送登入連結</button>
+      <div class="grid2" style="margin-top:12px">
+        <button class="secondary" id="loginBtn">寄送驗證碼</button>
+        <button class="primary" id="verifyBtn">驗證並登入</button>
+      </div>
       <p id="authMsg"></p>
     </section>
 
@@ -275,8 +279,22 @@ function renderOffer(){
 $('#loginBtn').onclick=async()=>{
  const email=$('#loginEmail').value.trim(),name=$('#loginName').value.trim();
  if(!email)return flash('請輸入 Email','error');
- const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('#')[0],data:{display_name:name||email.split('@')[0]}}});
- $('#authMsg').className=error?'error':'success';$('#authMsg').textContent=error?error.message:'登入連結已寄出，請到信箱點擊連結。';
+ const {error}=await db.auth.signInWithOtp({email,options:{data:{display_name:name||email.split('@')[0]}}});
+ $('#authMsg').className=error?'error':'success';$('#authMsg').textContent=error?error.message:'驗證碼已寄出，請查看最新信件並輸入 6 位數字。';
+};
+$('#verifyBtn').onclick=async()=>{
+ const email=$('#loginEmail').value.trim(),token=$('#loginCode').value.trim();
+ if(!email)return flash('請輸入 Email','error');
+ if(!/^\d{6}$/.test(token))return flash('請輸入信件中的 6 位數驗證碼','error');
+ $('#authMsg').className='muted';$('#authMsg').textContent='正在驗證…';
+ const {data,error}=await db.auth.verifyOtp({email,token,type:'email'});
+ if(error){
+  $('#authMsg').className='error';
+  $('#authMsg').textContent='驗證碼錯誤或已過期，請確認是最新一封信中的 6 位數字。';
+  return;
+ }
+ session=data.session;
+ if(session)await enterApp();
 };
 $('#logoutBtn').onclick=async()=>{await db.auth.signOut();location.reload()};
 
