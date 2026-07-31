@@ -270,9 +270,9 @@ async function enterApp(){
 }
 async function refreshAll(){await Promise.all([loadMyOffer(),loadMarket(),loadMyOrders()])}
 async function loadMyOffer(){
- const {data,error}=await db.from('storage_offers').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
+ const {data,error}=await db.from('storage_offers').select('*').eq('owner_id',session.user.id).order('updated_at',{ascending:false}).order('created_at',{ascending:false});
  if(error)return;
- myOffer=data;
+ myOffer=data?.[0]||null;
  $('#offerGroups').value=myOffer?.total_groups??'';
  $('#offerActive').value=String(myOffer?.active??true);
  renderOffer();
@@ -346,7 +346,8 @@ $('#saveOfferBtn').onclick=async()=>{
  const used=myOffer.total_groups-myOffer.available_groups-myOffer.reserved_groups;
   const minimum=used+myOffer.reserved_groups;
   if(total<minimum)return flash(`目前已有 ${minimum} 組已完成或配對中，寄倉總數不能低於 ${minimum} 組`,'error');
-  res=await db.from('storage_offers').update({total_groups:total,available_groups:total-used-myOffer.reserved_groups,active:$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('id',myOffer.id).select().single();
+  res=await db.from('storage_offers').update({total_groups:total,available_groups:total-used-myOffer.reserved_groups,active:$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('owner_id',session.user.id).select();
+  if(!res.error)res.data=res.data?.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0]||myOffer;
  }else{
   res=await db.from('storage_offers').insert({owner_id:session.user.id,total_groups:total,available_groups:total,active:$('#offerActive').value==='true'}).select().single();
  }
@@ -370,10 +371,12 @@ function itemText(items){return (items||[]).map(x=>`${esc(x.name)}：輸入 ${x.
 async function loadMarket(){
  const [{data:orders},{data:offers}]=await Promise.all([
   db.from('orders').select('*').eq('status','pending').order('created_at'),
-  db.from('storage_offers').select('*').eq('active',true)
+  db.from('storage_offers').select('*').eq('active',true).order('updated_at',{ascending:false}).order('created_at',{ascending:false})
  ]);
- const available=(offers||[]).reduce((n,x)=>n+x.available_groups,0);
- $('#marketStats').innerHTML=`<div class="stat"><b>${offers?.length||0}</b>位寄倉者</div><div class="stat"><b>${available}</b>可配對組數</div><div class="stat"><b>${orders?.length||0}</b>等待訂單</div>`;
+ const seenOwners=new Set();
+ const latestOffers=(offers||[]).filter(x=>!seenOwners.has(x.owner_id)&&seenOwners.add(x.owner_id));
+ const available=latestOffers.reduce((n,x)=>n+x.available_groups,0);
+ $('#marketStats').innerHTML=`<div class="stat"><b>${latestOffers.length}</b>位寄倉者</div><div class="stat"><b>${available}</b>可配對組數</div><div class="stat"><b>${orders?.length||0}</b>等待訂單</div>`;
  $('#openOrders').innerHTML=orders?.length?orders.map(o=>`<div class="card"><span class="status">等待配對</span><h3>需要 ${o.required_groups} 組</h3><div class="muted">${itemText(o.items)}</div></div>`).join(''):'<p class="muted">目前沒有等待中的訂單。</p>';
 }
 async function loadMyOrders(){
