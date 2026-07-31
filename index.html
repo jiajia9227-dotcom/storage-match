@@ -270,7 +270,7 @@ async function enterApp(){
 }
 async function refreshAll(){await Promise.all([loadMyOffer(),loadMarket(),loadMyOrders()])}
 async function loadMyOffer(){
- const {data,error}=await db.from('storage_offers').select('*').eq('owner_id',session.user.id).order('updated_at',{ascending:false}).order('created_at',{ascending:false});
+ const {data,error}=await db.from('storage_offers').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false});
  if(error)return;
  myOffer=data?.[0]||null;
  $('#offerGroups').value=myOffer?.total_groups??'';
@@ -341,15 +341,20 @@ $('#saveProfileBtn').onclick=async()=>{
 
 $('#saveOfferBtn').onclick=async()=>{
  const total=Number($('#offerGroups').value);if(!Number.isInteger(total)||total<0)return flash('請輸入正確組數','error');
+ const uid=session.user.id;
+ const current=await db.from('storage_offers').select('*').eq('owner_id',uid).order('created_at',{ascending:false});
+ if(current.error)return flash('讀取原寄倉資料失敗，請重新整理後再試：'+current.error.message,'error');
+ const existing=current.data||[];
+ myOffer=existing[0]||null;
  let res;
  if(myOffer){
  const used=myOffer.total_groups-myOffer.available_groups-myOffer.reserved_groups;
   const minimum=used+myOffer.reserved_groups;
   if(total<minimum)return flash(`目前已有 ${minimum} 組已完成或配對中，寄倉總數不能低於 ${minimum} 組`,'error');
-  res=await db.from('storage_offers').update({total_groups:total,available_groups:total-used-myOffer.reserved_groups,active:$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('owner_id',session.user.id).select();
+  res=await db.from('storage_offers').update({total_groups:total,available_groups:total-used-myOffer.reserved_groups,active:$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('owner_id',uid).select();
   if(!res.error)res.data=res.data?.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0]||myOffer;
  }else{
-  res=await db.from('storage_offers').insert({owner_id:session.user.id,total_groups:total,available_groups:total,active:$('#offerActive').value==='true'}).select().single();
+  res=await db.from('storage_offers').insert({owner_id:uid,total_groups:total,available_groups:total,active:$('#offerActive').value==='true'}).select().single();
  }
  if(res.error)return flash(res.error.message,'error');myOffer=res.data;renderOffer();flash('寄倉資料已更新');refreshAll();
 };
