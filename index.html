@@ -235,7 +235,13 @@ async function init(){
  renderCatalog();
  const {data,error}=await db.auth.getSession();session=data.session;
  if(session){
-  await enterApp();
+  const {data:userData,error:userError}=await db.auth.getUser();
+  if(userError||!userData.user){
+   await db.auth.signOut({scope:'local'});
+   session=null;
+  }else{
+   await enterApp();
+  }
  }else if(error){
   $('#authMsg').className='error';
   $('#authMsg').textContent='無法讀取登入狀態，請重新整理後再試。';
@@ -243,6 +249,12 @@ async function init(){
  db.auth.onAuthStateChange(async(_,s)=>{session=s;if(s)await enterApp();});
 }
 async function enterApp(){
+ const {data:userData,error:userError}=await db.auth.getUser();
+ if(userError||!userData.user){
+  await db.auth.signOut({scope:'local'});
+  location.reload();
+  return;
+ }
  $('#authPanel').classList.add('hidden');$('#app').classList.remove('hidden');
  const uid=session.user.id;
  const [{data:p},{data:c},{data:o}]=await Promise.all([
