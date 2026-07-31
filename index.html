@@ -39,17 +39,13 @@
     </section>
 
     <section id="authPanel" class="panel">
-      <h2>會員登入</h2>
-      <p class="muted">第一次使用請設定密碼並註冊；之後可直接用 Email 與密碼登入。LINE 與收件資料只有配對雙方能查看。</p>
+      <h2>私群會員登入</h2>
+      <p class="muted">輸入您的稱呼與私群通行碼即可進入。LINE 與收件資料只有配對成功的雙方能查看。</p>
       <div class="grid2">
         <div><label>您的稱呼</label><input id="loginName" placeholder="例如：佳佳"></div>
-        <div><label>Email</label><input id="loginEmail" type="email" placeholder="name@example.com"></div>
-        <div class="wide"><label>密碼（至少 6 個字元）</label><input id="loginPassword" type="password" minlength="6" autocomplete="current-password" placeholder="請輸入密碼"></div>
+        <div><label>私群通行碼</label><input id="groupCode" type="password" autocomplete="off" placeholder="請輸入通行碼"></div>
       </div>
-      <div class="grid2" style="margin-top:12px">
-        <button class="secondary" id="registerBtn">第一次使用・註冊</button>
-        <button class="primary" id="loginBtn">登入</button>
-      </div>
+      <button class="primary" id="loginBtn" style="margin-top:12px">進入配對系統</button>
       <p id="authMsg"></p>
     </section>
 
@@ -57,7 +53,7 @@
       <div class="panel">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
           <div>您好，<b id="helloName">會員</b></div>
-          <button class="secondary" id="logoutBtn">登出</button>
+          <button class="secondary" id="logoutBtn">更換使用者</button>
         </div>
         <div class="nav" style="margin-top:14px">
           <button class="active" data-tab="market">配對大廳</button>
@@ -126,6 +122,7 @@
 <script>
 const SUPABASE_URL='https://lfemfwneglgtwvkjadvz.supabase.co';
 const SUPABASE_KEY='sb_publishable_i4zR037176sX4c8GDj9mHQ_HSM2_F93';
+const GROUP_CODE='KLH2026';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let session=null,profile=null,myOffer=null;
 
@@ -233,27 +230,12 @@ function updateOrder(){
 
 async function init(){
  renderCatalog();
- const url=new URL(location.href);
- let callbackError=null;
- if(url.searchParams.get('code')){
-  const result=await db.auth.exchangeCodeForSession(url.searchParams.get('code'));
-  callbackError=result.error;
- }
- const hash=new URLSearchParams(location.hash.replace(/^#/,''));
- if(!callbackError&&hash.get('access_token')&&hash.get('refresh_token')){
-  const result=await db.auth.setSession({
-   access_token:hash.get('access_token'),
-   refresh_token:hash.get('refresh_token')
-  });
-  callbackError=result.error;
- }
  const {data,error}=await db.auth.getSession();session=data.session;
  if(session){
-  history.replaceState({},document.title,location.pathname);
   await enterApp();
- }else if(callbackError||error){
+ }else if(error){
   $('#authMsg').className='error';
-  $('#authMsg').textContent='登入連結無法使用，請回到信箱點最新一封登入信；若仍無法登入，再重新寄送一次。';
+  $('#authMsg').textContent='無法讀取登入狀態，請重新整理後再試。';
  }
  db.auth.onAuthStateChange(async(_,s)=>{session=s;if(s)await enterApp();});
 }
@@ -265,7 +247,7 @@ async function enterApp(){
   db.from('private_contacts').select('*').eq('user_id',uid).single(),
   db.from('storage_offers').select('*').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1).maybeSingle()
  ]);
- profile=p||{display_name:session.user.email.split('@')[0]};myOffer=o;
+ profile=p||{display_name:session.user.user_metadata?.display_name||'私群會員'};myOffer=o;
  $('#helloName').textContent=profile.display_name;$('#profileName').value=profile.display_name||'';
  $('#lineId').value=c?.line_id||'';$('#phone').value=c?.phone||'';$('#recipientName').value=c?.recipient_name||'';$('#address').value=c?.address||'';
  $('#offerGroups').value=o?.total_groups??'';$('#offerActive').value=String(o?.active??true);
@@ -277,40 +259,27 @@ function renderOffer(){
 }
 
 $('#loginBtn').onclick=async()=>{
- const email=$('#loginEmail').value.trim(),password=$('#loginPassword').value;
- if(!email)return flash('請輸入 Email','error');
- if(password.length<6)return flash('密碼至少需要 6 個字元','error');
- $('#authMsg').className='muted';$('#authMsg').textContent='正在登入…';
- const {data,error}=await db.auth.signInWithPassword({email,password});
+ const name=$('#loginName').value.trim(),code=$('#groupCode').value.trim();
+ if(!name)return flash('請輸入您的稱呼','error');
+ if(code!==GROUP_CODE){
+  $('#authMsg').className='error';
+  $('#authMsg').textContent='通行碼不正確，請向私群管理員確認。';
+  return;
+ }
+ $('#authMsg').className='muted';$('#authMsg').textContent='正在進入配對系統…';
+ const {data,error}=await db.auth.signInAnonymously({options:{data:{display_name:name}}});
  if(error){
   $('#authMsg').className='error';
-  $('#authMsg').textContent='Email 或密碼不正確；第一次使用請先按「註冊」。';
+  $('#authMsg').textContent=error.message.toLowerCase().includes('anonymous')?'尚未開啟匿名登入，請通知管理員完成設定。':'登入失敗：'+error.message;
   return;
  }
  session=data.session;
  if(session)await enterApp();
 };
-$('#registerBtn').onclick=async()=>{
- const email=$('#loginEmail').value.trim(),password=$('#loginPassword').value,name=$('#loginName').value.trim();
- if(!email)return flash('請輸入 Email','error');
- if(!name)return flash('請輸入您的稱呼','error');
- if(password.length<6)return flash('密碼至少需要 6 個字元','error');
- $('#authMsg').className='muted';$('#authMsg').textContent='正在建立帳號…';
- const {data,error}=await db.auth.signUp({email,password,options:{data:{display_name:name}}});
- if(error){
-  $('#authMsg').className='error';
-  $('#authMsg').textContent=error.message.includes('already registered')?'這個 Email 已註冊，請直接按「登入」。':'註冊失敗：'+error.message;
-  return;
- }
- session=data.session;
- if(session){
-  await enterApp();
- }else{
-  $('#authMsg').className='error';
-  $('#authMsg').textContent='帳號已建立，但 Supabase 尚未關閉信箱確認；請通知管理員完成設定。';
- }
+$('#logoutBtn').onclick=async()=>{
+ if(!confirm('更換使用者後，這台裝置將無法再查看目前帳號的配對紀錄。確定要更換嗎？'))return;
+ await db.auth.signOut();location.reload()
 };
-$('#logoutBtn').onclick=async()=>{await db.auth.signOut();location.reload()};
 
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));
