@@ -77,9 +77,9 @@
 
       <section id="tab-seller" class="tab panel hidden">
         <h2>登記我的寄倉</h2>
-        <p class="muted">第一次請輸入寄倉總組數；之後可隨時回到這裡修改。已完成及配對中的組數會保留，只調整尚未配對的剩餘數量。</p>
+        <p class="muted">請輸入目前還能提供配對的組數。已完成及配對中的組數會保留；如果暫時不想再配對，可直接輸入 0。</p>
         <div class="grid2">
-          <div><label>寄倉總組數</label><input id="offerGroups" type="number" min="0" step="1" placeholder="例如：20"></div>
+          <div><label>目前尚可配對組數</label><input id="offerGroups" type="number" min="0" step="1" placeholder="例如：20"></div>
           <div><label>是否開放配對</label><select id="offerActive"><option value="true">開放配對</option><option value="false">暫停配對</option></select></div>
         </div>
         <button class="primary" id="saveOfferBtn" style="margin-top:12px">儲存寄倉資料</button>
@@ -265,7 +265,7 @@ async function enterApp(){
  profile=p||{display_name:session.user.user_metadata?.display_name||session.user.email?.split('@')[0]||'會員'};myOffer=o;
  $('#helloName').textContent=profile.display_name;$('#profileName').value=profile.display_name||'';
  $('#lineId').value=c?.line_id||'';$('#phone').value=c?.phone||'';$('#recipientName').value=c?.recipient_name||'';$('#address').value=c?.address||'';
- $('#offerGroups').value=o?.total_groups??'';$('#offerActive').value=String(o?.active??true);
+ $('#offerGroups').value=o?.available_groups??'';$('#offerActive').value=String(o?.active??true);
  renderOffer();await refreshAll();
 }
 async function refreshAll(){await Promise.all([loadMyOffer(),loadMarket(),loadMyOrders()])}
@@ -273,14 +273,14 @@ async function loadMyOffer(){
  const {data,error}=await db.from('storage_offers').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false});
  if(error)return;
  myOffer=data?.[0]||null;
- $('#offerGroups').value=myOffer?.total_groups??'';
+ $('#offerGroups').value=myOffer?.available_groups??'';
  $('#offerActive').value=String(myOffer?.active??true);
  renderOffer();
 }
 function renderOffer(){
  if(myOffer){
   const completed=Math.max(0,myOffer.total_groups-myOffer.available_groups-myOffer.reserved_groups);
-  $('#offerSummary').innerHTML=`目前總登記：<b>${myOffer.total_groups}</b> 組｜尚可配對：<b>${myOffer.available_groups}</b> 組｜配對中：<b>${myOffer.reserved_groups}</b> 組｜已完成：<b>${completed}</b> 組<br><span class="muted">要增加或減少寄倉時，修改上方「寄倉總組數」，再按下按鈕即可。</span>`;
+  $('#offerSummary').innerHTML=`目前尚可配對：<b>${myOffer.available_groups}</b> 組｜配對中：<b>${myOffer.reserved_groups}</b> 組｜已完成：<b>${completed}</b> 組<br><span class="muted">要增加、減少或暫停寄倉時，修改上方「目前尚可配對組數」，再按下按鈕即可。</span>`;
   $('#saveOfferBtn').textContent='修改寄倉數量';
  }else{
   $('#offerSummary').innerHTML='尚未登記寄倉';
@@ -340,7 +340,7 @@ $('#saveProfileBtn').onclick=async()=>{
 };
 
 $('#saveOfferBtn').onclick=async()=>{
- const total=Number($('#offerGroups').value);if(!Number.isInteger(total)||total<0)return flash('請輸入正確組數','error');
+ const available=Number($('#offerGroups').value);if(!Number.isInteger(available)||available<0)return flash('請輸入正確組數','error');
  const uid=session.user.id;
  const current=await db.from('storage_offers').select('*').eq('owner_id',uid).order('created_at',{ascending:false});
  if(current.error)return flash('讀取原寄倉資料失敗，請重新整理後再試：'+current.error.message,'error');
@@ -348,13 +348,11 @@ $('#saveOfferBtn').onclick=async()=>{
  myOffer=existing[0]||null;
  let res;
  if(myOffer){
- const used=myOffer.total_groups-myOffer.available_groups-myOffer.reserved_groups;
-  const minimum=used+myOffer.reserved_groups;
-  if(total<minimum)return flash(`目前已有 ${minimum} 組已完成或配對中，寄倉總數不能低於 ${minimum} 組`,'error');
-  res=await db.from('storage_offers').update({total_groups:total,available_groups:total-used-myOffer.reserved_groups,active:$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('owner_id',uid).select();
+ const completed=Math.max(0,myOffer.total_groups-myOffer.available_groups-myOffer.reserved_groups);
+  res=await db.from('storage_offers').update({total_groups:completed+myOffer.reserved_groups+available,available_groups:available,active:available>0&&$('#offerActive').value==='true',updated_at:new Date().toISOString()}).eq('owner_id',uid).select();
   if(!res.error)res.data=res.data?.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0]||myOffer;
  }else{
-  res=await db.from('storage_offers').insert({owner_id:uid,total_groups:total,available_groups:total,active:$('#offerActive').value==='true'}).select().single();
+  res=await db.from('storage_offers').insert({owner_id:uid,total_groups:available,available_groups:available,active:available>0&&$('#offerActive').value==='true'}).select().single();
  }
  if(res.error)return flash(res.error.message,'error');myOffer=res.data;renderOffer();flash('寄倉資料已更新');refreshAll();
 };
