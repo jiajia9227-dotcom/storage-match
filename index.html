@@ -269,6 +269,18 @@ async function enterApp(){
  renderOffer();await refreshAll();
 }
 async function refreshAll(){await Promise.all([loadMyOffer(),loadMarket(),loadMyOrders()])}
+async function rematchPendingOrders(){
+ const {data:pending,error}=await db.from('orders').select('id').eq('status','pending').order('created_at');
+ if(error)return {matched:0,error};
+ let matched=0;
+ for(const order of pending||[]){
+  const result=await db.rpc('match_order',{p_order_id:order.id});
+  if(result.error)return {matched,error:result.error};
+  const value=Array.isArray(result.data)?result.data[0]:result.data;
+  if(value?.status==='matched')matched++;
+ }
+ return {matched,error:null};
+}
 async function loadMyOffer(){
  const {data,error}=await db.from('storage_offers').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false});
  if(error)return;
@@ -354,7 +366,13 @@ $('#saveOfferBtn').onclick=async()=>{
  }else{
   res=await db.from('storage_offers').insert({owner_id:uid,total_groups:available,available_groups:available,active:available>0&&$('#offerActive').value==='true'}).select().single();
  }
- if(res.error)return flash(res.error.message,'error');myOffer=res.data;renderOffer();flash('寄倉資料已更新');refreshAll();
+ if(res.error)return flash(res.error.message,'error');
+ myOffer=res.data;
+ renderOffer();
+ const rematch=await rematchPendingOrders();
+ if(rematch.error)flash('寄倉已更新，但重新配對失敗：'+rematch.error.message,'error');
+ else flash(rematch.matched?`寄倉已更新，並自動配對 ${rematch.matched} 張等待中的訂單。`:'寄倉資料已更新，目前沒有可成立的新配對。');
+ refreshAll();
 };
 
 $('#submitOrderBtn').onclick=async()=>{
